@@ -523,7 +523,7 @@ body {
 }
 
 /* 다시뽑기 버튼 */
-.btn-reset-wrap { display: flex; justify-content: center; margin-top: 16px; }
+.btn-reset-wrap { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 16px; }
 .btn-reset {
   background: transparent;
   border: 1.5px dashed rgba(192,57,43,0.4);
@@ -548,6 +548,51 @@ body {
   transition: color 0.3s;
 }
 .btn-reset:hover .btn-reset-text { color: var(--red); }
+
+/* 공유 버튼 */
+.btn-share {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: transparent;
+  border: 1.5px solid rgba(26,26,26,0.15);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Noto Serif KR', serif;
+  font-size: 13px;
+  color: rgba(26,26,26,0.5);
+  letter-spacing: 0.08em;
+  transition: all 0.3s;
+}
+.btn-share:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+  background: rgba(26,26,26,0.04);
+}
+
+/* 토스트 */
+#share-toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--ink);
+  color: white;
+  padding: 10px 24px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-family: 'Noto Serif KR', serif;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s;
+  z-index: 9999;
+  white-space: nowrap;
+}
+#share-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
 
 /* 로딩 */
 .loading-text::after {
@@ -677,11 +722,14 @@ svg.illustration { width: 100%; height: 100%; }
   <div id="fortune-content"></div>
 
   <div class="btn-reset-wrap">
-    <button class="btn-reset" onclick="resetAll()">
-      <svg class="btn-reset-border" viewBox="0 0 160 44" preserveAspectRatio="none">
-        <rect x="2" y="2" width="156" height="40" rx="4" fill="none" stroke="#C0392B" stroke-width="1.2" stroke-dasharray="4 2" opacity="0.45"/>
-        <rect x="5" y="5" width="150" height="34" rx="3" fill="none" stroke="#D4AF37" stroke-width="0.5" opacity="0.3"/>
+    <button class="btn-share" onclick="shareLink()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
       </svg>
+      링크 공유
+    </button>
+    <button class="btn-reset" onclick="resetAll()">
       <span class="btn-reset-text">
         <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style="opacity:0.4">
           <circle cx="5.5" cy="2.3" r="2" fill="#C0392B"/><circle cx="5.5" cy="8.7" r="2" fill="#C0392B"/>
@@ -692,6 +740,7 @@ svg.illustration { width: 100%; height: 100%; }
       </span>
     </button>
   </div>
+  <div id="share-toast">🔗 링크가 복사됐어요!</div>
 </section>
 
 <script>
@@ -1006,6 +1055,26 @@ function resetAll() {
 }
 
 initCards();
+
+function shareLink() {
+  const url = window.location.href;
+  navigator.clipboard.writeText(url).then(() => {
+    const toast = document.getElementById('share-toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }).catch(() => {
+    // 복사 실패시 fallback
+    const el = document.createElement('textarea');
+    el.value = url;
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    const toast = document.getElementById('share-toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  });
+}
 </script>
 </body>
 </html>
