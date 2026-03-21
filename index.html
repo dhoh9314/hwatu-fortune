@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>화투 운세떼기</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;500;600;700;900&family=Nanum+Gothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --red: #C0392B;
+  --gold: #D4AF37;
+  --ink: #1A1A1A;
+  --ink-soft: #3A2A14;
+  --ink-mid: #5A4A34;
+  --hanji: #FAF5E8;
+  --hanji2: #F5ECDA;
+  --hanji3: #F0E4CC;
+  --celadon: #5B8A7A;
+}
+
+body {
+  font-family: 'Noto Serif KR', serif;
+  background: #ffffff;
+  color: var(--ink);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ── 히어로 ── */
+#hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px 48px;
+  overflow: hidden;
+  background: white;
+}
+
+.hero-deco-branch {
+  position: absolute;
+  bottom: 0;
+  width: 140px;
+  opacity: 0;
+  animation: fadeSlideIn 1.2s 0.3s forwards;
+}
+.hero-deco-branch.left { left: 0; transform: translateX(-20px); }
+.hero-deco-branch.right { right: 0; transform: scaleX(-1) translateX(-20px); }
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.2s forwards;
+}
+
+.hero-label {
+  font-size: 11px;
+  letter-spacing: 0.35em;
+  color: rgba(26,26,26,0.4);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.hero-title {
+  font-size: clamp(42px, 8vw, 64px);
+  font-weight: 900;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.hero-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 20px 0 16px;
+}
+.hero-divider-line {
+  height: 1px;
+  width: 48px;
+  background: rgba(192,57,43,0.3);
+}
+
+.hero-sub {
+  font-size: 14px;
+  letter-spacing: 0.15em;
+  color: rgba(26,26,26,0.5);
+}
+
+.hero-desc {
+  margin: 14px auto 0;
+  font-size: 12px;
+  color: rgba(26,26,26,0.38);
+  letter-spacing: 0.02em;
+  line-height: 1.8;
+  word-break: keep-all;
+  max-width: 320px;
+  text-align: center;
+}
+
+/* ── 카드 뽑기 섹션 ── */
+#card-section {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  background: white;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: clamp(18px, 3vw, 22px);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.section-sub {
+  font-size: 12px;
+  color: rgba(26,26,26,0.45);
+  letter-spacing: 0.05em;
+  margin-bottom: 16px;
+}
+
+.progress-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.progress-dot {
+  width: 32px;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(26,26,26,0.1);
+  transition: background 0.3s;
+}
+.progress-dot.active { background: var(--red); }
+
+/* 카드 그리드 */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-bottom: 32px;
+}
+@media(min-width: 480px) { .cards-grid { grid-template-columns: repeat(8, 1fr); } }
+@media(min-width: 640px) { .cards-grid { grid-template-columns: repeat(10, 1fr); } }
+@media(min-width: 768px) { .cards-grid { grid-template-columns: repeat(12, 1fr); } }
+
+.hwatu-card {
+  aspect-ratio: 2/3;
+  cursor: pointer;
+  position: relative;
+  perspective: 800px;
+  transition: transform 0.2s;
+}
+.hwatu-card:hover:not(.disabled):not(.selected) {
+  transform: scale(1.1) translateY(-4px);
+}
+.hwatu-card.disabled:not(.selected) { opacity: 0.5; cursor: not-allowed; }
+
+.card-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease-in-out;
+  border-radius: 4px;
+}
+.card-inner.flipped { transform: rotateY(180deg); }
+
+.card-back, .card-front {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  backface-visibility: hidden;
+  overflow: hidden;
+}
+
+.card-back {
+  background: linear-gradient(135deg, #1A1A1A, #2D1810, #1A1A1A);
+  padding: 1.5px;
+}
+.card-back-inner {
+  width: 100%;
+  height: 100%;
+  background: #1A1A1A;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.card-back-inner::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(212,175,55,0.2);
+  border-radius: 2px;
+}
+.card-back-inner::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(212,175,55,0.1);
+  border-radius: 1px;
+}
+.card-back-dot {
+  width: 12px; height: 12px;
+  background: radial-gradient(circle, rgba(212,175,55,0.4), rgba(192,57,43,0.3));
+  border-radius: 50%;
+}
+
+.card-front {
+  transform: rotateY(180deg);
+  background: white;
+}
+.card-front-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.card-front-border {
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+  opacity: 0.25;
+}
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 3px 0;
+  flex-shrink: 0;
+}
+.card-header-month, .card-header-type {
+  font-size: 5.5px;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.75;
+}
+.card-illustration { flex: 1; padding: 1px 1px 1px; overflow: hidden; }
+.card-name {
+  font-size: 5px;
+  font-weight: 600;
+  text-align: center;
+  padding: 0 2px 2px;
+  opacity: 0.65;
+  letter-spacing: 0.02em;
+}
+
+.hwatu-card.selected .card-front {
+  box-shadow: 0 0 0 2px var(--gold), 0 4px 12px rgba(212,175,55,0.3);
+}
+.selection-badge {
+  position: absolute;
+  top: -4px; right: -4px;
+  width: 16px; height: 16px;
+  background: var(--red);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  z-index: 10;
+  animation: popIn 0.3s ease;
+}
+.disabled-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.6);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* 운세보기 버튼 */
+.btn-fortune-wrap {
+  display: flex;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: all 0.35s;
+  pointer-events: none;
+}
+.btn-fortune-wrap.active {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.btn-fortune {
+  position: relative;
+  padding: 12px 40px;
+  background: var(--red);
+  color: white;
+  font-family: 'Noto Serif KR', serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(192,57,43,0.2);
+  transition: all 0.3s;
+}
+.btn-fortune::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(212,175,55,0.5);
+  border-radius: 4px;
+}
+.btn-fortune:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(192,57,43,0.35); }
+.btn-fortune:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ── 결과 섹션 ── */
+#result-section {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  display: none;
+  background: white;
+}
+#result-section.show { display: block; animation: fadeUp 0.6s forwards; }
+
+.result-header { text-align: center; margin-bottom: 28px; }
+.result-title {
+  font-size: clamp(20px, 3vw, 24px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+
+.result-cards {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.result-card {
+  width: 60px;
+}
+.result-card-inner {
+  aspect-ratio: 2/3;
+  border-radius: 4px;
+  padding: 2px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.result-card-body {
+  width: 100%; height: 100%;
+  background: rgba(255,255,255,0.9);
+  border-radius: 3px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 한지 편지 */
+.hanji-letter {
+  position: relative;
+  margin-bottom: 20px;
+}
+.hanji-shadow {
+  position: absolute;
+  inset: 4px;
+  background: rgba(100,70,30,0.08);
+  border-radius: 12px;
+  transform: rotate(0.5deg) translateY(5px);
+  filter: blur(10px);
+  z-index: 0;
+}
+.hanji-body {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(165deg, var(--hanji) 0%, var(--hanji2) 35%, var(--hanji3) 100%);
+  box-shadow: 0 2px 24px rgba(120,80,20,0.08), 0 0 0 1px rgba(180,140,70,0.12), inset 0 1px 0 rgba(255,255,255,0.5);
+  z-index: 1;
+}
+.hanji-lines {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(175,130,70,0.12) 27px, rgba(175,130,70,0.12) 28px);
+  background-position-y: 52px;
+  pointer-events: none;
+}
+.hanji-margin-line {
+  position: absolute;
+  top: 0; bottom: 0;
+  pointer-events: none;
+}
+.hanji-content {
+  padding: 20px 40px 24px;
+  position: relative;
+}
+.hanji-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.hanji-meta-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: rgba(100,70,30,0.5);
+  letter-spacing: 0.15em;
+}
+.hanji-meta-date { font-size: 10px; color: rgba(100,70,30,0.35); letter-spacing: 0.06em; }
+.hanji-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(192,57,43,0.1) 20%, rgba(192,57,43,0.1) 80%, transparent 100%);
+  margin-bottom: 16px;
+}
+.hanji-text {
+  font-size: 14.5px;
+  line-height: 2.05;
+  letter-spacing: 0.01em;
+  word-break: keep-all;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+/* 세부 운세 카드 */
+.fortune-section-card {
+  border-radius: 12px;
+  background: linear-gradient(160deg, #FDFAF3 0%, #F9F3E3 100%);
+  box-shadow: 0 1px 8px rgba(120,80,20,0.06), 0 0 0 1px rgba(180,140,70,0.1);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+.fortune-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.fortune-section-title-wrap { display: flex; align-items: center; gap: 10px; }
+.fortune-section-icon {
+  font-size: 11px;
+  font-weight: 700;
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px;
+  color: var(--red);
+  background: rgba(192,57,43,0.06);
+  border: 1px solid rgba(192,57,43,0.12);
+}
+.fortune-section-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  letter-spacing: 0.08em;
+}
+.rating-dots { display: flex; gap: 4px; }
+.rating-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(192,57,43,0.15);
+}
+.rating-dot.on { background: var(--red); }
+.fortune-section-text {
+  font-size: 13px;
+  line-height: 1.95;
+  letter-spacing: 0.005em;
+  word-break: keep-all;
+  color: var(--ink-mid);
+}
+
+/* 오늘의 조언 내부 */
+.advice-lucky {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.lucky-badge {
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--gold);
+  background: rgba(212,175,55,0.08);
+  border: 1px solid rgba(212,175,55,0.15);
+}
+.lucky-text { font-size: 13px; color: var(--ink-soft); line-height: 1.8; }
+.advice-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.advice-divider-line { flex: 1; height: 1px; background: rgba(160,110,50,0.1); }
+.advice-text {
+  font-size: 13.5px;
+  line-height: 2.0;
+  letter-spacing: 0.01em;
+  word-break: keep-all;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+/* 다시뽑기 버튼 */
+.btn-reset-wrap { display: flex; justify-content: center; margin-top: 16px; }
+.btn-reset {
+  background: transparent;
+  border: 1.5px dashed rgba(192,57,43,0.4);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 10px 32px;
+  font-family: 'Noto Serif KR', serif;
+  letter-spacing: 0.12em;
+  transition: all 0.3s;
+}
+.btn-reset:hover {
+  border-color: var(--red);
+  background: rgba(192,57,43,0.04);
+}
+.btn-reset-border { display: none; }
+.btn-reset-text {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: rgba(26,26,26,0.55);
+  transition: color 0.3s;
+}
+.btn-reset:hover .btn-reset-text { color: var(--red); }
+
+/* 로딩 */
+.loading-text::after {
+  content: '';
+  animation: loadingDots 1.2s infinite;
+}
+@keyframes loadingDots {
+  0% { content: ''; }
+  33% { content: '.'; }
+  66% { content: '..'; }
+  100% { content: '...'; }
+}
+
+/* 애니메이션 */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes popIn {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* SVG 일러스트 */
+svg.illustration { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+
+<!-- 히어로 -->
+<section id="hero">
+  <!-- 왼쪽 매화 가지 -->
+  <div class="hero-deco-branch left">
+    <svg viewBox="0 0 200 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 100 260 C 98 220 88 180 75 150 C 62 120 50 100 40 70 C 35 55 32 35 30 10" stroke="#5C3317" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.55"/>
+      <path d="M 75 150 C 95 140 115 130 140 118" stroke="#5C3317" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.45"/>
+      <path d="M 55 105 C 70 95 90 82 108 72" stroke="#5C3317" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.4"/>
+      <path d="M 40 70 C 55 60 70 55 90 50" stroke="#5C3317" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.35"/>
+      <g transform="translate(16,-2)"><g opacity="0.8"><ellipse cx="8" cy="8" rx="4.2" ry="4.6" fill="#C0392B"/><ellipse cx="8" cy="0.8" rx="4.2" ry="4.6" fill="#C0392B"/><ellipse cx="14.7" cy="4.4" rx="4.2" ry="4.6" fill="#C0392B"/><ellipse cx="12.3" cy="12.6" rx="4.2" ry="4.6" fill="#C0392B"/><ellipse cx="3.7" cy="12.6" rx="4.2" ry="4.6" fill="#C0392B"/><circle cx="8" cy="8" r="2" fill="#D4AF37"/></g></g>
+      <g transform="translate(126,108)"><g opacity="0.75"><ellipse cx="7" cy="7" rx="3.7" ry="4" fill="#C0392B"/><ellipse cx="7" cy="1" rx="3.7" ry="4" fill="#C0392B"/><ellipse cx="12.8" cy="4" rx="3.7" ry="4" fill="#C0392B"/><ellipse cx="10.8" cy="11.1" rx="3.7" ry="4" fill="#C0392B"/><ellipse cx="3.2" cy="11.1" rx="3.7" ry="4" fill="#C0392B"/><circle cx="7" cy="7" r="1.7" fill="#D4AF37"/></g></g>
+      <g transform="translate(78,40)"><g opacity="0.65"><ellipse cx="6" cy="6" rx="3.2" ry="3.5" fill="#D4AF37"/><ellipse cx="6" cy="0.9" rx="3.2" ry="3.5" fill="#D4AF37"/><ellipse cx="11" cy="3.4" rx="3.2" ry="3.5" fill="#D4AF37"/><ellipse cx="9.3" cy="9.7" rx="3.2" ry="3.5" fill="#D4AF37"/><ellipse cx="2.7" cy="9.7" rx="3.2" ry="3.5" fill="#D4AF37"/><circle cx="6" cy="6" r="1.5" fill="#D4AF37"/></g></g>
+      <circle cx="60" cy="57" r="3" fill="#C0392B" opacity="0.5"/>
+      <circle cx="120" cy="100" r="2.5" fill="#C0392B" opacity="0.45"/>
+      <circle cx="35" cy="30" r="2" fill="#D4AF37" opacity="0.5"/>
+    </svg>
+  </div>
+
+  <!-- 오른쪽 매화 가지 -->
+  <div class="hero-deco-branch right">
+    <svg viewBox="0 0 200 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 100 260 C 98 220 88 180 75 150 C 62 120 50 100 40 70 C 35 55 32 35 30 10" stroke="#5C3317" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.55"/>
+      <path d="M 75 150 C 95 140 115 130 140 118" stroke="#5C3317" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.45"/>
+      <path d="M 55 105 C 70 95 90 82 108 72" stroke="#5C3317" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.4"/>
+      <g transform="translate(16,-2)"><g opacity="0.8"><ellipse cx="8" cy="8" rx="4.2" ry="4.6" fill="#C0392B"/><ellipse cx="8" cy="0.8" rx="4.2" ry="4.6" fill="#C0392B"/><ellipse cx="14.7" cy="4.4" rx="4.2" ry="4.6" fill="#C0392B"/><ellipse cx="12.3" cy="12.6" rx="4.2" ry="4.6" fill="#C0392B"/><ellipse cx="3.7" cy="12.6" rx="4.2" ry="4.6" fill="#C0392B"/><circle cx="8" cy="8" r="2" fill="#D4AF37"/></g></g>
+      <g transform="translate(126,108)"><g opacity="0.75"><ellipse cx="7" cy="7" rx="3.7" ry="4" fill="#C0392B"/><ellipse cx="7" cy="1" rx="3.7" ry="4" fill="#C0392B"/><ellipse cx="12.8" cy="4" rx="3.7" ry="4" fill="#C0392B"/><ellipse cx="10.8" cy="11.1" rx="3.7" ry="4" fill="#C0392B"/><ellipse cx="3.2" cy="11.1" rx="3.7" ry="4" fill="#C0392B"/><circle cx="7" cy="7" r="1.7" fill="#D4AF37"/></g></g>
+      <circle cx="60" cy="57" r="3" fill="#C0392B" opacity="0.5"/>
+    </svg>
+  </div>
+
+  <div class="hero-content">
+    <p class="hero-label">Korean Fortune</p>
+    <h1 class="hero-title">화투 운세떼기</h1>
+    <div class="hero-divider">
+      <div class="hero-divider-line"></div>
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <circle cx="7" cy="7" r="4" fill="none" stroke="#C0392B" stroke-width="0.5" opacity="0.4"/>
+        <circle cx="7" cy="3.2" r="1.6" fill="#C0392B" opacity="0.55"/>
+        <circle cx="7" cy="10.8" r="1.6" fill="#C0392B" opacity="0.55"/>
+        <circle cx="3.2" cy="7" r="1.6" fill="#C0392B" opacity="0.55"/>
+        <circle cx="10.8" cy="7" r="1.6" fill="#C0392B" opacity="0.55"/>
+        <circle cx="4.5" cy="4.5" r="1.4" fill="#C0392B" opacity="0.45"/>
+        <circle cx="9.5" cy="9.5" r="1.4" fill="#C0392B" opacity="0.45"/>
+        <circle cx="9.5" cy="4.5" r="1.4" fill="#C0392B" opacity="0.45"/>
+        <circle cx="4.5" cy="9.5" r="1.4" fill="#C0392B" opacity="0.45"/>
+        <circle cx="7" cy="7" r="0.9" fill="#D4AF37" opacity="0.7"/>
+      </svg>
+      <div class="hero-divider-line"></div>
+    </div>
+    <p class="hero-sub">패 네 장이 오늘의 하루를 말해줍니다</p>
+    <p class="hero-desc">화투 운세떼기는 화투패 각각의 상징과 의미를 바탕으로 오늘의 운세를 보는, 한국 전통 민간 점술이에요.</p>
+  </div>
+</section>
+
+<!-- 카드 섹션 -->
+<section id="card-section">
+  <div class="section-header">
+    <h2 class="section-title">패를 선택하세요</h2>
+    <p class="section-sub">마음이 이끄는 대로 네 장의 패를 골라보세요</p>
+    <div class="progress-dots">
+      <div class="progress-dot" id="dot-0"></div>
+      <div class="progress-dot" id="dot-1"></div>
+      <div class="progress-dot" id="dot-2"></div>
+      <div class="progress-dot" id="dot-3"></div>
+    </div>
+  </div>
+
+  <div class="cards-grid" id="cards-grid"></div>
+
+  <div class="btn-fortune-wrap" id="btn-fortune-wrap">
+    <button class="btn-fortune" id="btn-fortune" onclick="showFortune()">운세 보기</button>
+  </div>
+</section>
+
+<!-- 결과 섹션 -->
+<section id="result-section">
+  <div class="result-header">
+    <h2 class="result-title">오늘의 운세</h2>
+    <div class="hero-divider">
+      <div class="hero-divider-line"></div>
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+        <circle cx="5.5" cy="2.3" r="2" fill="#C0392B" opacity="0.5"/>
+        <circle cx="5.5" cy="8.7" r="2" fill="#C0392B" opacity="0.5"/>
+        <circle cx="2.3" cy="5.5" r="2" fill="#C0392B" opacity="0.5"/>
+        <circle cx="8.7" cy="5.5" r="2" fill="#C0392B" opacity="0.5"/>
+        <circle cx="5.5" cy="5.5" r="1.1" fill="#D4AF37" opacity="0.6"/>
+      </svg>
+      <div class="hero-divider-line"></div>
+    </div>
+  </div>
+
+  <div class="result-cards" id="result-cards"></div>
+  <div id="fortune-content"></div>
+
+  <div class="btn-reset-wrap">
+    <button class="btn-reset" onclick="resetAll()">
+      <svg class="btn-reset-border" viewBox="0 0 160 44" preserveAspectRatio="none">
+        <rect x="2" y="2" width="156" height="40" rx="4" fill="none" stroke="#C0392B" stroke-width="1.2" stroke-dasharray="4 2" opacity="0.45"/>
+        <rect x="5" y="5" width="150" height="34" rx="3" fill="none" stroke="#D4AF37" stroke-width="0.5" opacity="0.3"/>
+      </svg>
+      <span class="btn-reset-text">
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none" style="opacity:0.4">
+          <circle cx="5.5" cy="2.3" r="2" fill="#C0392B"/><circle cx="5.5" cy="8.7" r="2" fill="#C0392B"/>
+          <circle cx="2.3" cy="5.5" r="2" fill="#C0392B"/><circle cx="8.7" cy="5.5" r="2" fill="#C0392B"/>
+          <circle cx="5.5" cy="5.5" r="1.1" fill="#D4AF37"/>
+        </svg>
+        다시 뽑기 ↻
+      </span>
+    </button>
+  </div>
+</section>
+
+<script>
+// ── 화투 데이터
+const CARDS = [
+  {id:1,month:'1월',type:'광',name:'송학광',meaning:'장수와 고결함, 새로운 시작의 기운',color:'#2D5F3F'},
+  {id:2,month:'1월',type:'띠',name:'송학띠',meaning:'변함없는 절개와 인내',color:'#2D5F3F'},
+  {id:3,month:'1월',type:'피',name:'송학피1',meaning:'곧은 마음과 정직',color:'#2D5F3F'},
+  {id:4,month:'1월',type:'피',name:'송학피2',meaning:'청렴과 지조',color:'#2D5F3F'},
+  {id:5,month:'2월',type:'광',name:'매조광',meaning:'희망과 봄의 전령, 새로운 소식',color:'#C0392B'},
+  {id:6,month:'2월',type:'띠',name:'매조띠',meaning:'고귀한 향기와 품격',color:'#C0392B'},
+  {id:7,month:'2월',type:'피',name:'매조피1',meaning:'꿋꿋한 의지',color:'#C0392B'},
+  {id:8,month:'2월',type:'피',name:'매조피2',meaning:'봄을 여는 용기',color:'#C0392B'},
+  {id:9,month:'3월',type:'광',name:'벚꽃광',meaning:'아름다운 만남과 화합',color:'#B0607A'},
+  {id:10,month:'3월',type:'띠',name:'벚꽃띠',meaning:'찬란한 순간의 아름다움',color:'#B0607A'},
+  {id:11,month:'3월',type:'피',name:'벚꽃피1',meaning:'우아함과 섬세함',color:'#B0607A'},
+  {id:12,month:'3월',type:'피',name:'벚꽃피2',meaning:'덧없는 아름다움의 진리',color:'#B0607A'},
+  {id:13,month:'4월',type:'광',name:'흑싸리광',meaning:'검소함과 성실함',color:'#2A2A2A'},
+  {id:14,month:'4월',type:'띠',name:'흑싸리띠',meaning:'소박한 행복',color:'#2A2A2A'},
+  {id:15,month:'4월',type:'피',name:'흑싸리피1',meaning:'겸손과 정성',color:'#2A2A2A'},
+  {id:16,month:'4월',type:'피',name:'흑싸리피2',meaning:'땅에 뿌리내린 힘',color:'#2A2A2A'},
+  {id:17,month:'5월',type:'광',name:'난초광',meaning:'군자의 향기, 고상한 품격',color:'#5B8A7A'},
+  {id:18,month:'5월',type:'띠',name:'난초띠',meaning:'은은한 기품',color:'#5B8A7A'},
+  {id:19,month:'5월',type:'피',name:'난초피1',meaning:'단아한 아름다움',color:'#5B8A7A'},
+  {id:20,month:'5월',type:'피',name:'난초피2',meaning:'깊은 향기의 여운',color:'#5B8A7A'},
+  {id:21,month:'6월',type:'광',name:'모란광',meaning:'부귀영화, 풍요로움',color:'#C0392B'},
+  {id:22,month:'6월',type:'띠',name:'모란띠',meaning:'화려함과 번영',color:'#C0392B'},
+  {id:23,month:'6월',type:'피',name:'모란피1',meaning:'풍성한 축복',color:'#C0392B'},
+  {id:24,month:'6월',type:'피',name:'모란피2',meaning:'왕의 꽃, 존귀함',color:'#C0392B'},
+  {id:25,month:'7월',type:'광',name:'홍싸리광',meaning:'열정과 생명력',color:'#D4AF37'},
+  {id:26,month:'7월',type:'띠',name:'홍싸리띠',meaning:'멧돼지의 용맹',color:'#D4AF37'},
+  {id:27,month:'7월',type:'피',name:'홍싸리피1',meaning:'붉은 기운의 활력',color:'#D4AF37'},
+  {id:28,month:'7월',type:'피',name:'홍싸리피2',meaning:'여름의 정열',color:'#D4AF37'},
+  {id:29,month:'8월',type:'광',name:'공산광',meaning:'보름달의 원만함, 성취',color:'#D4AF37'},
+  {id:30,month:'8월',type:'띠',name:'공산띠',meaning:'기러기의 전령, 소식',color:'#D4AF37'},
+  {id:31,month:'8월',type:'피',name:'공산피1',meaning:'달빛 아래 명상',color:'#D4AF37'},
+  {id:32,month:'8월',type:'피',name:'공산피2',meaning:'가을 하늘의 깨달음',color:'#D4AF37'},
+  {id:33,month:'9월',type:'광',name:'국화광',meaning:'술잔과 시, 풍류와 여유',color:'#D4AF37'},
+  {id:34,month:'9월',type:'띠',name:'국화띠',meaning:'고고한 절개',color:'#D4AF37'},
+  {id:35,month:'9월',type:'피',name:'국화피1',meaning:'가을의 지혜',color:'#D4AF37'},
+  {id:36,month:'9월',type:'피',name:'국화피2',meaning:'서리 이긴 기상',color:'#D4AF37'},
+  {id:37,month:'10월',type:'광',name:'단풍광',meaning:'사슴과 단풍, 자연과의 조화',color:'#C0392B'},
+  {id:38,month:'10월',type:'띠',name:'단풍띠',meaning:'화려한 변화',color:'#C0392B'},
+  {id:39,month:'10월',type:'피',name:'단풍피1',meaning:'계절의 전환',color:'#C0392B'},
+  {id:40,month:'10월',type:'피',name:'단풍피2',meaning:'붉게 물든 정취',color:'#C0392B'},
+  {id:41,month:'11월',type:'광',name:'오동광',meaning:'봉황이 깃드는 나무, 길조',color:'#5B8A7A'},
+  {id:42,month:'11월',type:'띠',name:'오동띠',meaning:'고귀한 품격',color:'#5B8A7A'},
+  {id:43,month:'11월',type:'피',name:'오동피1',meaning:'신령한 기운',color:'#5B8A7A'},
+  {id:44,month:'11월',type:'피',name:'오동피2',meaning:'군자의 나무',color:'#5B8A7A'},
+  {id:45,month:'12월',type:'광',name:'비광',meaning:'비내리는 겨울, 정화와 준비',color:'#3A3A4A'},
+  {id:46,month:'12월',type:'띠',name:'비띠',meaning:'버드나무의 유연함',color:'#3A3A4A'},
+  {id:47,month:'12월',type:'피',name:'비피1',meaning:'한 해의 마무리',color:'#3A3A4A'},
+  {id:48,month:'12월',type:'피',name:'비피2',meaning:'쉼과 성찰의 시간',color:'#3A3A4A'},
+];
+
+// ── 일러스트 SVG
+function getIllustration(month, type, color) {
+  const m = parseInt(month);
+  const isGwang = type === '광';
+  const isTti = type === '띠';
+  const c = color === '#E8B4C8' ? '#B0607A' : color;
+
+  const gwangCircle = isGwang ? `<circle cx="33" cy="7" r="4.5" fill="#D4AF37" opacity="0.55"/>` : '';
+  const ttiBar = isTti ? `<rect x="2" y="50" width="36" height="8" fill="${c}" opacity="0.45" rx="1"/><line x1="2" y1="50" x2="38" y2="50" stroke="${c}" stroke-width="0.6" opacity="0.6"/>` : '';
+
+  const illustrations = {
+    1: `<line x1="20" y1="55" x2="20" y2="30" stroke="${c}" stroke-width="1.8" stroke-linecap="round"/><line x1="20" y1="44" x2="13" y2="38" stroke="${c}" stroke-width="1.2" stroke-linecap="round"/><line x1="20" y1="40" x2="27" y2="34" stroke="${c}" stroke-width="1.2" stroke-linecap="round"/>${[-35,-18,0,18,35].map(a=>{const r=a*Math.PI/180;return`<line x1="20" y1="38" x2="${20+11*Math.sin(r)}" y2="${38-11*Math.cos(r)}" stroke="${c}" stroke-width="0.9" stroke-linecap="round" opacity="0.85"/>`}).join('')}${[-28,-12,0,12,28].map(a=>{const r=a*Math.PI/180;return`<line x1="20" y1="30" x2="${20+9*Math.sin(r)}" y2="${30-9*Math.cos(r)}" stroke="${c}" stroke-width="0.9" stroke-linecap="round" opacity="0.85"/>`}).join('')}<ellipse cx="10" cy="48" rx="4" ry="2.2" fill="${c}" opacity="0.8"/><path d="M 7 47 Q 5 43 6 40" stroke="${c}" stroke-width="1.3" stroke-linecap="round"/><circle cx="6" cy="39.5" r="1.4" fill="${c}"/><circle cx="6.6" cy="39" r="0.5" fill="#C0392B"/><path d="M 10 47 Q 14 44 16 47" stroke="${c}" stroke-width="0.9" fill="none"/><path d="M 10 47 Q 6 44 4 47" stroke="${c}" stroke-width="0.9" fill="none"/>`,
+    2: `<path d="M 10 58 Q 14 44 18 30 Q 22 18 26 10" stroke="${c}" stroke-width="1.6" stroke-linecap="round" fill="none" opacity="0.7"/><path d="M 18 30 Q 26 26 30 30" stroke="${c}" stroke-width="1.1" stroke-linecap="round" fill="none" opacity="0.6"/><path d="M 22 20 Q 28 17 32 20" stroke="${c}" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.55"/>${[[26,10,4,0.9],[30,30,3.5,0.85],[32,20,3,0.8],[18,22,2.5,0.7]].map(([fx,fy,r,op])=>`<g opacity="${op}">${[0,72,144,216,288].map(a=>`<circle cx="${fx+r*Math.cos(a*Math.PI/180)}" cy="${fy+r*Math.sin(a*Math.PI/180)}" r="${r*0.62}" fill="${c}"/>`).join('')}<circle cx="${fx}" cy="${fy}" r="${r*0.28}" fill="#D4AF37"/></g>`).join('')}<ellipse cx="13" cy="44" rx="3" ry="1.6" fill="${c}" opacity="0.85"/><circle cx="10.8" cy="43.4" r="1.3" fill="${c}" opacity="0.85"/><path d="M 10 43.2 L 8.5 43" stroke="${c}" stroke-width="0.9" stroke-linecap="round"/><path d="M 13 43 Q 16 41 17 43" stroke="${c}" stroke-width="0.7" fill="none"/>`,
+    3: `<path d="M 6 58 Q 10 45 16 36 Q 22 27 28 22" stroke="${c}" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.55"/><path d="M 16 36 Q 22 32 32 34" stroke="${c}" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.5"/>${[[28,22,4.5,0.9],[32,34,4,0.85],[16,15,3.5,0.8],[12,34,3,0.7]].map(([fx,fy,r,op])=>`<g opacity="${op}">${[0,72,144,216,288].map((a,i)=>{const rad=a*Math.PI/180;const px=fx+r*Math.cos(rad);const py=fy+r*Math.sin(rad);return`<ellipse cx="${px}" cy="${py}" rx="${r*0.55}" ry="${r*0.65}" fill="${c}" transform="rotate(${a+90},${px},${py})"/>`}).join('')}<circle cx="${fx}" cy="${fy}" r="${r*0.25}" fill="#D4AF37"/></g>`).join('')}`,
+    4: `<path d="M 20 58 Q 14 40 8 18" stroke="${c}" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.7"/><path d="M 20 58 Q 20 38 20 14" stroke="${c}" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.65"/><path d="M 20 58 Q 26 40 32 18" stroke="${c}" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.7"/>${[[11,36,-50,1.8],[13,28,-45,1.6],[20,30,0,1.8],[20,22,0,1.6],[29,36,50,1.8],[27,28,45,1.6]].map(([x,y,rot,s])=>`<ellipse cx="${x}" cy="${y}" rx="${s}" ry="${s*1.5}" fill="${c}" opacity="0.6" transform="rotate(${rot},${x},${y})"/>`).join('')}`,
+    5: `<path d="M 20 55 Q 8 45 5 30 Q 4 22 8 12" stroke="${c}" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.7"/><path d="M 20 55 Q 20 42 20 28 Q 20 18 22 8" stroke="${c}" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.65"/><path d="M 20 55 Q 32 45 35 30 Q 36 22 32 12" stroke="${c}" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.7"/><path d="M 20 38 Q 24 30 22 20" stroke="${c}" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.55"/><g transform="translate(22,18)">${[-72,0,72,144,216].map(a=>{const r=a*Math.PI/180;return`<ellipse cx="${4.5*Math.cos(r)}" cy="${4.5*Math.sin(r)}" rx="2" ry="3" fill="${c}" opacity="0.7" transform="rotate(${a+90},${4.5*Math.cos(r)},${4.5*Math.sin(r)})"/>`}).join('')}<circle cx="0" cy="0" r="0.8" fill="#D4AF37"/></g>`,
+    6: `<line x1="20" y1="58" x2="20" y2="42" stroke="${c}" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/><ellipse cx="9" cy="41" rx="4.5" ry="2.5" fill="${c}" opacity="0.45" transform="rotate(-35,9,41)"/><ellipse cx="31" cy="41" rx="4.5" ry="2.5" fill="${c}" opacity="0.45" transform="rotate(35,31,41)"/>${[0,45,90,135,180,225,270,315].map(a=>{const r=a*Math.PI/180;return`<ellipse cx="${20+10*Math.cos(r)}" cy="${28+10*Math.sin(r)}" rx="4.5" ry="6" fill="${c}" opacity="0.55" transform="rotate(${a+90},${20+10*Math.cos(r)},${28+10*Math.sin(r)})"/>`}).join('')}${[0,60,120,180,240,300].map(a=>{const r=a*Math.PI/180;return`<ellipse cx="${20+6*Math.cos(r)}" cy="${28+6*Math.sin(r)}" rx="3.5" ry="5" fill="${c}" opacity="0.7" transform="rotate(${a+90},${20+6*Math.cos(r)},${28+6*Math.sin(r)})"/>`}).join('')}<circle cx="20" cy="28" r="2.5" fill="#D4AF37" opacity="0.9"/>`,
+    7: `<path d="M 20 42 Q 12 32 8 16" stroke="${c}" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.7"/><path d="M 20 42 Q 20 30 20 14" stroke="${c}" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.65"/><path d="M 20 42 Q 28 32 32 16" stroke="${c}" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.7"/><ellipse cx="20" cy="53" rx="8" ry="4.5" fill="${c}" opacity="0.75"/><ellipse cx="12.5" cy="51" rx="3.5" ry="3" fill="${c}" opacity="0.8"/><ellipse cx="10" cy="51.5" rx="2" ry="1.5" fill="${c}" opacity="0.9"/><path d="M 8.5 53 L 7 55" stroke="${c}" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>${[14,19,24,29].map(lx=>`<rect x="${lx}" y="56" width="2" height="4" fill="${c}" opacity="0.65" rx="1"/>`).join('')}`,
+    8: `<circle cx="20" cy="18" r="11" fill="${c}" opacity="0.18"/><circle cx="20" cy="18" r="11" stroke="${c}" stroke-width="1.2" opacity="0.6"/><path d="M 2 55 L 12 36 L 20 44 L 28 32 L 38 55 Z" fill="${c}" opacity="0.4"/><path d="M 2 55 L 12 36 L 20 44 L 28 32 L 38 55" stroke="${c}" stroke-width="0.8" opacity="0.6" fill="none"/><path d="M 14 10 Q 16 8 18 10" stroke="${c}" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"/><path d="M 20 9 Q 22 7 24 9" stroke="${c}" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"/>`,
+    9: `<line x1="20" y1="58" x2="20" y2="42" stroke="${c}" stroke-width="1.4" stroke-linecap="round" opacity="0.6"/>${Array.from({length:16},(_,i)=>{const a=(i*22.5)*Math.PI/180;return`<ellipse cx="${20+12*Math.cos(a)}" cy="${28+12*Math.sin(a)}" rx="2" ry="5.5" fill="${c}" opacity="0.55" transform="rotate(${i*22.5+90},${20+12*Math.cos(a)},${28+12*Math.sin(a)})"/>`}).join('')}${Array.from({length:8},(_,i)=>{const a=(i*45)*Math.PI/180;return`<ellipse cx="${20+4*Math.cos(a)}" cy="${28+4*Math.sin(a)}" rx="1.5" ry="3" fill="${c}" opacity="0.85" transform="rotate(${i*45+90},${20+4*Math.cos(a)},${28+4*Math.sin(a)})"/>`}).join('')}<circle cx="20" cy="28" r="3" fill="#D4AF37" opacity="0.9"/>`,
+    10: `<g transform="translate(20,24)"><path d="M 0 0 L -3 -10 Q 0 -14 3 -10 Z" fill="${c}" opacity="0.8"/><path d="M 0 0 L -9 -7 Q -13 -4 -10 -1 Z" fill="${c}" opacity="0.75"/><path d="M 0 0 L 9 -7 Q 13 -4 10 -1 Z" fill="${c}" opacity="0.75"/><path d="M 0 0 L -11 -1 Q -12 3 -9 4 Z" fill="${c}" opacity="0.7"/><path d="M 0 0 L 11 -1 Q 12 3 9 4 Z" fill="${c}" opacity="0.7"/><line x1="0" y1="4" x2="0" y2="8" stroke="${c}" stroke-width="1" stroke-linecap="round" opacity="0.7"/></g><ellipse cx="20" cy="51" rx="7" ry="4" fill="${c}" opacity="0.75"/><rect x="13" y="44" width="2.5" height="5" fill="${c}" rx="1.2" opacity="0.75"/><ellipse cx="14" cy="43" rx="2.5" ry="2" fill="${c}" opacity="0.75"/><path d="M 13 41 L 11 37 L 10 35" stroke="${c}" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.75"/><path d="M 15 41 L 16 37 L 17 35" stroke="${c}" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.75"/>`,
+    11: `<line x1="20" y1="58" x2="20" y2="35" stroke="${c}" stroke-width="2" stroke-linecap="round" opacity="0.55"/><path d="M 20 35 Q 8 28 7 40 Q 8 48 20 44 Q 32 48 33 40 Q 32 28 20 35 Z" fill="${c}" opacity="0.35"/><path d="M 20 35 Q 8 28 7 40 Q 8 48 20 44 Q 32 48 33 40 Q 32 28 20 35 Z" stroke="${c}" stroke-width="0.8" opacity="0.6"/><ellipse cx="20" cy="18" rx="5" ry="3" fill="${c}" opacity="0.8"/><path d="M 17 17 Q 8 12 6 17 Q 9 20 17 18" fill="${c}" opacity="0.7"/><path d="M 23 17 Q 32 12 34 17 Q 31 20 23 18" fill="${c}" opacity="0.7"/><path d="M 18 16 Q 16 12 15 10" stroke="${c}" stroke-width="1.5" stroke-linecap="round" fill="none"/><circle cx="15" cy="9" r="2" fill="${c}"/><path d="M 20 21 Q 22 26 18 30 Q 20 32 24 28 Q 26 24 20 21" fill="${c}" opacity="0.65"/>`,
+    12: `${[6,10,14,18,22,26,30,34,38].map((rx,i)=>`<line x1="${rx}" y1="${i%2===0?4:8}" x2="${rx-4}" y2="${i%2===0?18:22}" stroke="${c}" stroke-width="0.7" stroke-linecap="round" opacity="${0.2+i*0.025}"/>`).join('')}<line x1="14" y1="58" x2="14" y2="18" stroke="${c}" stroke-width="2.2" stroke-linecap="round" opacity="0.65"/><path d="M 14 22 C 22 26 24 36 20 48" stroke="${c}" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.7"/><path d="M 14 26 C 24 30 26 42 22 54" stroke="${c}" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.65"/><path d="M 14 20 C 4 24 2 36 6 48" stroke="${c}" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.7"/><g opacity="0.6"><path d="M 30 54 Q 35 50 40 54" fill="${c}" opacity="0.7"/><line x1="35" y1="50" x2="35" y2="58" stroke="${c}" stroke-width="1" stroke-linecap="round"/><circle cx="35" cy="44" r="1.8" fill="${c}"/><line x1="35" y1="46" x2="35" y2="52" stroke="${c}" stroke-width="1.2" stroke-linecap="round"/></g>`,
+  };
+
+  return `<svg viewBox="0 0 40 60" fill="none" xmlns="http://www.w3.org/2000/svg" class="illustration">${gwangCircle}${illustrations[m]||''}${ttiBar}</svg>`;
+}
+
+// ── 운세 생성
+const typeWeight = { '광': 5, '띠': 3, '피': 1 };
+const monthEnergy = {
+  '1월': {element:'수(水)',direction:'북'}, '2월': {element:'목(木)',direction:'동'},
+  '3월': {element:'목(木)',direction:'동남'}, '4월': {element:'목(木)',direction:'동'},
+  '5월': {element:'화(火)',direction:'남'}, '6월': {element:'화(火)',direction:'남'},
+  '7월': {element:'화(火)',direction:'남서'}, '8월': {element:'금(金)',direction:'서'},
+  '9월': {element:'금(金)',direction:'서'}, '10월': {element:'금(金)',direction:'서북'},
+  '11월': {element:'수(水)',direction:'북'}, '12월': {element:'수(水)',direction:'북'},
+};
+
+function generateFortune(cards) {
+  const totalWeight = cards.reduce((s,c)=>s+(typeWeight[c.type]||1),0);
+  const hasGwang = cards.some(c=>c.type==='광');
+  const hasTti = cards.some(c=>c.type==='띠');
+  const uniqueMonths = new Set(cards.map(c=>c.month)).size;
+  const uniqueElements = new Set(cards.map(c=>monthEnergy[c.month]?.element||'토(土)')).size;
+  let baseLuck = Math.min(5, Math.max(1, Math.round(totalWeight/3)));
+  if (hasGwang) baseLuck = Math.min(5, baseLuck+1);
+  if (uniqueMonths===4) baseLuck = Math.min(5, baseLuck+1);
+
+  const summaries = [
+    `${cards[0].name}과 ${cards[1].name}이 이끄는 오늘은 사방에서 좋은 기운이 모여드는 날입니다. ${cards[0].meaning}의 기운이 하루를 밝혀주니, 자신감을 갖고 나아가십시오.`,
+    `네 장의 패가 전하는 오늘의 기운은 변화와 균형입니다. ${cards[0].meaning}으로 시작하여 ${cards[3].meaning}으로 마무리되는 흐름이니, 아침엔 적극적으로 저녁엔 차분히 하십시오.`,
+    `${cards[0].month}의 기운과 ${cards[2].month}의 기운이 조화를 이루어 안정된 하루가 예상됩니다. ${cards[1].meaning}의 자세가 오늘의 열쇠입니다.`,
+  ];
+  const summary = summaries[baseLuck >= 4 ? 0 : baseLuck >= 3 ? 1 : 2];
+
+  const sections = [
+    { title:'총운', icon:'卦', rating:baseLuck, content: baseLuck>=4 ? `${cards[0].month}의 기운이 순조롭게 흐릅니다. 새로운 일을 시작하기 좋은 날이며, ${monthEnergy[cards[0].month]?.direction||'동'} 방향이 길합니다.` : baseLuck>=3 ? `전반적으로 무난한 하루입니다. 꾸준히 해오던 일에 집중하면 작지만 확실한 성과를 얻습니다.` : `조금 조심스러운 하루입니다. 중요한 결정은 내일로 미루시고 마음을 가다듬으십시오.` },
+    { title:'사업운', icon:'業', rating:Math.min(5,Math.max(1,(hasGwang?4:2)+(uniqueMonths>=3?1:0))), content: hasGwang ? `${cards[0].name}의 광채가 능력을 빛나게 합니다. 중요한 발표나 제안이 있다면 과감히 밀고 나가십시오.` : `업무적으로 꾸준한 성과를 낼 수 있는 날입니다. 진행 중인 일을 마무리하는 데 집중하십시오.` },
+    { title:'재물운', icon:'財', rating:Math.min(5,Math.max(1,hasGwang?4:Math.round(totalWeight/3.5))), content: hasGwang ? `재물의 흐름이 순조롭습니다. 합리적인 투자 계획을 세우기 좋은 날이나, 충동적인 소비는 삼가십시오.` : `재물운은 보통 수준이나 안정적입니다. 꾸준한 축적이 결실을 맺을 것입니다.` },
+    { title:'애정운', icon:'緣', rating:Math.min(5,Math.max(1,cards.filter(x=>['2월','3월','4월'].includes(x.month)).length>=2?4:hasGwang?3:2)), content: cards.some(x=>['2월','3월'].includes(x.month)) ? `봄의 기운이 애정운에 활력을 불어넣고 있습니다. 뜻밖의 호감 표현을 받을 수 있습니다.` : `평온한 흐름입니다. 일상 속 작은 배려와 따뜻한 말 한마디가 관계를 돈독하게 합니다.` },
+    { title:'건강운', icon:'壽', rating:Math.min(5,Math.max(2,uniqueElements>=3?4:uniqueElements>=2?3:2)), content: uniqueElements>=3 ? `오행의 기운이 고르게 분포해 건강 상태가 양호합니다. 가벼운 산책으로 기의 흐름을 원활하게 하십시오.` : `건강은 무난하나 따뜻한 음식을 드시고 충분한 수면을 취하십시오.` },
+  ];
+
+  const luckyItems = {
+    '1월':['소나무 향 초','녹색 손수건'], '2월':['매화차','붉은 편지지'],
+    '3월':['벚꽃 향수','분홍색 스카프'], '4월':['검은 만년필','가죽 수첩'],
+    '5월':['난초 화분','옥색 팔찌'], '6월':['모란 향 비누','금색 브로치'],
+    '7월':['호박색 구슬','삼베 주머니'], '8월':['달 모양 펜던트','황금빛 찻잔'],
+    '9월':['국화차','노란 손수건'], '10월':['단풍잎 책갈피','갈색 지갑'],
+    '11월':['오동나무 빗','은색 반지'], '12월':['버드나무 차','우산 열쇠고리'],
+  };
+  const items = luckyItems[cards[0].month] || ['따뜻한 차 한 잔'];
+  const luckyItem = items[Math.floor(Math.random()*items.length)];
+
+  const advices = [
+    `오늘의 핵심은 '적극적인 행동'입니다. 좋은 기운을 최대한 활용하되, ${cards[3].meaning}의 겸손함을 잃지 마십시오. 감사하는 마음이 복을 더 크게 만듭니다.`,
+    `오늘의 핵심은 '꾸준함'입니다. 화려한 성과보다 묵묵히 자기 자리를 지키는 것이 중요합니다. 작은 것부터 차근차근 쌓아가십시오.`,
+    `오늘의 핵심은 '인내와 성찰'입니다. 어려운 날일수록 마음의 뿌리를 단단히 하십시오. 내일은 반드시 더 나은 날이 올 것입니다.`,
+  ];
+  const advice = advices[baseLuck>=4?0:baseLuck>=3?1:2];
+
+  return { summary, sections, luckyItem, advice };
+}
+
+// ── 상태
+let selected = [];
+let shuffled = [];
+
+function smallFlowerSVG(dim=false) {
+  const op = dim ? 0.35 : 0.5;
+  return `<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5.5" cy="2.3" r="2" fill="#C0392B" opacity="${op}"/><circle cx="5.5" cy="8.7" r="2" fill="#C0392B" opacity="${op}"/><circle cx="2.3" cy="5.5" r="2" fill="#C0392B" opacity="${op}"/><circle cx="8.7" cy="5.5" r="2" fill="#C0392B" opacity="${op}"/><circle cx="4.5" cy="4.5" r="1.4" fill="#C0392B" opacity="${op*0.8}"/><circle cx="9.5" cy="4.5" r="1.4" fill="#C0392B" opacity="${op*0.8}"/><circle cx="4.5" cy="9.5" r="1.4" fill="#C0392B" opacity="${op*0.8}"/><circle cx="9.5" cy="9.5" r="1.4" fill="#C0392B" opacity="${op*0.8}"/><circle cx="5.5" cy="5.5" r="1.1" fill="#D4AF37" opacity="${op+0.1}"/></svg>`;
+}
+
+function hanjiLetter(header, date, contentHTML) {
+  return `
+    <div class="hanji-letter">
+      <div class="hanji-shadow"></div>
+      <div class="hanji-body">
+        <div class="hanji-lines"></div>
+        <div class="hanji-margin-line" style="left:30px;width:1px;background:rgba(192,57,43,0.13)"></div>
+        <div class="hanji-margin-line" style="left:33px;width:1px;background:rgba(192,57,43,0.08)"></div>
+        <div class="hanji-content">
+          <div class="hanji-meta">
+            <div class="hanji-meta-label">${smallFlowerSVG(true)} ${header}</div>
+            ${date ? `<span class="hanji-meta-date">${date}</span>` : ''}
+          </div>
+          <div class="hanji-divider"></div>
+          ${contentHTML}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── 카드 그리드 초기화
+function initCards() {
+  shuffled = [...CARDS].sort(()=>Math.random()-0.5);
+  const grid = document.getElementById('cards-grid');
+  grid.innerHTML = shuffled.map(card => `
+    <div class="hwatu-card" data-id="${card.id}" onclick="selectCard(${card.id})">
+      <div class="card-inner" id="inner-${card.id}">
+        <div class="card-back">
+          <div class="card-back-inner">
+            <div class="card-back-dot"></div>
+          </div>
+        </div>
+        <div class="card-front">
+          <div class="card-front-inner">
+            <div class="card-front-border" style="color:${card.color}"></div>
+            <div class="card-header">
+              <span class="card-header-month" style="color:${card.color}">${card.month}</span>
+              <span class="card-header-type" style="color:${card.color}">${card.type}</span>
+            </div>
+            <div class="card-illustration">${getIllustration(card.month, card.type, card.color)}</div>
+            <div class="card-name" style="color:${card.color}">${card.name.substring(0,3)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectCard(id) {
+  if (selected.length >= 4) return;
+  if (selected.find(c=>c.id===id)) return;
+  const card = CARDS.find(c=>c.id===id);
+  if (!card) return;
+
+  selected.push(card);
+  const el = document.querySelector(`[data-id="${id}"]`);
+  const inner = document.getElementById(`inner-${id}`);
+  inner.classList.add('flipped');
+  el.classList.add('selected');
+
+  // 뱃지 추가
+  const badge = document.createElement('div');
+  badge.className = 'selection-badge';
+  badge.textContent = selected.length;
+  el.appendChild(badge);
+
+  // 나머지 비활성화
+  if (selected.length === 4) {
+    document.querySelectorAll('.hwatu-card:not(.selected)').forEach(c=>{
+      c.classList.add('disabled');
+      const overlay = document.createElement('div');
+      overlay.className = 'disabled-overlay';
+      c.appendChild(overlay);
+    });
+    document.getElementById('btn-fortune-wrap').classList.add('active');
+  }
+
+  // 진행 점
+  for(let i=0;i<selected.length;i++) {
+    document.getElementById(`dot-${i}`).classList.add('active');
+  }
+}
+
+function showFortune() {
+  const btn = document.getElementById('btn-fortune');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading-text">운세를 보는 중</span>';
+
+  setTimeout(()=>{
+    const result = generateFortune(selected);
+    renderResult(result);
+  }, 1200);
+}
+
+function renderResult(result) {
+  // 결과 카드들
+  const resultCardsEl = document.getElementById('result-cards');
+  resultCardsEl.innerHTML = selected.map(card=>`
+    <div class="result-card">
+      <div class="result-card-inner" style="background:linear-gradient(135deg,${card.color}22,${card.color}44)">
+        <div class="result-card-body">
+          <div class="card-front-border" style="color:${card.color}"></div>
+          <div class="card-header">
+            <span class="card-header-month" style="color:${card.color}">${card.month}</span>
+            <span class="card-header-type" style="color:${card.color}">${card.type}</span>
+          </div>
+          <div class="card-illustration">${getIllustration(card.month, card.type, card.color)}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  // 운세 풀이 한지 편지
+  const today = new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric'});
+  let html = hanjiLetter('운세 풀이', today, `<p class="hanji-text">${result.summary}</p>`);
+
+  // 세부 운세 카드들
+  result.sections.forEach(s=>{
+    const dots = [1,2,3,4,5].map(i=>`<div class="rating-dot${i<=s.rating?' on':''}"></div>`).join('');
+    html += `
+      <div class="fortune-section-card">
+        <div class="fortune-section-header">
+          <div class="fortune-section-title-wrap">
+            <div class="fortune-section-icon">${s.icon}</div>
+            <span class="fortune-section-name">${s.title}</span>
+          </div>
+          <div class="rating-dots">${dots}</div>
+        </div>
+        <p class="fortune-section-text">${s.content}</p>
+      </div>`;
+  });
+
+  // 조언 한지 편지
+  const adviceContent = `
+    <div class="advice-lucky">
+      <span class="lucky-badge">행운 아이템</span>
+      <span class="lucky-text">${result.luckyItem}</span>
+    </div>
+    <div class="advice-divider">
+      <div class="advice-divider-line"></div>
+      ${smallFlowerSVG(true)}
+      <div class="advice-divider-line"></div>
+    </div>
+    <p class="advice-text">${result.advice}</p>`;
+  html += hanjiLetter('오늘의 조언', '', adviceContent);
+
+  document.getElementById('fortune-content').innerHTML = html;
+  document.getElementById('result-section').classList.add('show');
+  document.getElementById('result-section').scrollIntoView({behavior:'smooth'});
+}
+
+function resetAll() {
+  selected = [];
+  document.querySelectorAll('.progress-dot').forEach(d=>d.classList.remove('active'));
+  document.getElementById('btn-fortune-wrap').classList.remove('active');
+  document.getElementById('btn-fortune').disabled = false;
+  document.getElementById('btn-fortune').textContent = '운세 보기';
+  document.getElementById('result-section').classList.remove('show');
+  document.getElementById('fortune-content').innerHTML = '';
+  document.getElementById('result-cards').innerHTML = '';
+  initCards();
+  document.getElementById('card-section').scrollIntoView({behavior:'smooth'});
+}
+
+initCards();
+</script>
+</body>
+</html>
