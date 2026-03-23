@@ -54,6 +54,9 @@ body {
   position: relative;
   z-index: 1;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   opacity: 0;
   animation: fadeUp 0.8s 0.2s forwards;
 }
@@ -621,11 +624,25 @@ body {
   100% { transform: scale(1); }
 }
 
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
 /* SVG 일러스트 */
 svg.illustration { width: 100%; height: 100%; }
+
+
+
+
+
+
 </style>
 </head>
 <body>
+
+
 
 <!-- 히어로 -->
 <section id="hero">
@@ -683,6 +700,7 @@ svg.illustration { width: 100%; height: 100%; }
 
 <!-- 카드 섹션 -->
 <section id="card-section">
+
   <div class="section-header">
     <h2 class="section-title">패를 선택하세요</h2>
     <p class="section-sub">마음이 이끄는 대로 네 장의 패를 골라보세요</p>
@@ -744,7 +762,11 @@ svg.illustration { width: 100%; height: 100%; }
 </section>
 
 <script>
-// ── 화투 데이터
+;
+
+
+
+
 const CARDS = [
   {id:1,month:'1월',type:'광',name:'송학광',meaning:'장수와 고결함, 새로운 시작의 기운',color:'#2D5F3F'},
   {id:2,month:'1월',type:'띠',name:'송학띠',meaning:'변함없는 절개와 인내',color:'#2D5F3F'},
@@ -944,11 +966,34 @@ function selectCard(id) {
   const card = CARDS.find(c=>c.id===id);
   if (!card) return;
 
+  // ── 정통 운세떼기: 같은 달 중복 불가
+  if (selected.find(c=>c.month===card.month)) {
+    // 살짝 흔들어서 안 된다는 표시
+    const el = document.querySelector(`[data-id="${id}"]`);
+    el.style.animation = 'shake 0.3s ease';
+    setTimeout(()=>el.style.animation='', 300);
+    return;
+  }
+
   selected.push(card);
   const el = document.querySelector(`[data-id="${id}"]`);
   const inner = document.getElementById(`inner-${id}`);
   inner.classList.add('flipped');
   el.classList.add('selected');
+
+  // 같은 달 카드 비활성화
+  document.querySelectorAll('.hwatu-card:not(.selected)').forEach(c=>{
+    const cid = parseInt(c.dataset.id);
+    const ccard = CARDS.find(x=>x.id===cid);
+    if (ccard && ccard.month === card.month) {
+      c.classList.add('disabled');
+      if (!c.querySelector('.disabled-overlay')) {
+        const overlay = document.createElement('div');
+        overlay.className = 'disabled-overlay';
+        c.appendChild(overlay);
+      }
+    }
+  });
 
   // 뱃지 추가
   const badge = document.createElement('div');
@@ -956,13 +1001,15 @@ function selectCard(id) {
   badge.textContent = selected.length;
   el.appendChild(badge);
 
-  // 나머지 비활성화
+  // 4장 다 선택시 나머지 전부 비활성화
   if (selected.length === 4) {
     document.querySelectorAll('.hwatu-card:not(.selected)').forEach(c=>{
       c.classList.add('disabled');
-      const overlay = document.createElement('div');
-      overlay.className = 'disabled-overlay';
-      c.appendChild(overlay);
+      if (!c.querySelector('.disabled-overlay')) {
+        const overlay = document.createElement('div');
+        overlay.className = 'disabled-overlay';
+        c.appendChild(overlay);
+      }
     });
     document.getElementById('btn-fortune-wrap').classList.add('active');
   }
@@ -977,14 +1024,11 @@ function showFortune() {
   const btn = document.getElementById('btn-fortune');
   btn.disabled = true;
   btn.innerHTML = '<span class="loading-text">운세를 보는 중</span>';
-
-  setTimeout(()=>{
-    const result = generateFortune(selected);
-    renderResult(result);
-  }, 1200);
+  setTimeout(() => renderResult(generateFortune(selected)), 1200);
 }
 
 function renderResult(result) {
+
   // 결과 카드들
   const resultCardsEl = document.getElementById('result-cards');
   resultCardsEl.innerHTML = selected.map(card=>`
@@ -1002,11 +1046,11 @@ function renderResult(result) {
     </div>
   `).join('');
 
-  // 운세 풀이 한지 편지
-  const today = new Date().toLocaleDateString('ko-KR',{month:'long',day:'numeric'});
+  // 날짜 로케일 반영
+  const today = new Date().toLocaleDateString('ko-KR', {month:'long', day:'numeric'});
+
   let html = hanjiLetter('운세 풀이', today, `<p class="hanji-text">${result.summary}</p>`);
 
-  // 세부 운세 카드들
   result.sections.forEach(s=>{
     const dots = [1,2,3,4,5].map(i=>`<div class="rating-dot${i<=s.rating?' on':''}"></div>`).join('');
     html += `
@@ -1022,7 +1066,6 @@ function renderResult(result) {
       </div>`;
   });
 
-  // 조언 한지 편지
   const adviceContent = `
     <div class="advice-lucky">
       <span class="lucky-badge">행운 아이템</span>
@@ -1043,6 +1086,7 @@ function renderResult(result) {
 
 function resetAll() {
   selected = [];
+  try { history.replaceState(null, '', window.location.pathname); } catch(e) {} // URL 초기화
   document.querySelectorAll('.progress-dot').forEach(d=>d.classList.remove('active'));
   document.getElementById('btn-fortune-wrap').classList.remove('active');
   document.getElementById('btn-fortune').disabled = false;
@@ -1056,21 +1100,71 @@ function resetAll() {
 
 initCards();
 
-function shareLink() {
-  const url = window.location.href;
-  navigator.clipboard.writeText(url).then(() => {
+// ── URL에 카드 결과 담겨있으면 자동 복원
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const cardIds = params.get('cards');
+  if (!cardIds) return;
+
+  const ids = cardIds.split(',').map(Number);
+  if (ids.length !== 4) return;
+
+  // 카드 자동 선택
+  ids.forEach(id => {
+    const card = CARDS.find(c=>c.id===id);
+    if (!card) return;
+    selected.push(card);
+    const el = document.querySelector(`[data-id="${id}"]`);
+    if (!el) return;
+    const inner = document.getElementById(`inner-${id}`);
+    inner.classList.add('flipped');
+    el.classList.add('selected');
+    const badge = document.createElement('div');
+    badge.className = 'selection-badge';
+    badge.textContent = selected.length;
+    el.appendChild(badge);
+  });
+
+  // 진행 점 채우기
+  for(let i=0;i<4;i++) document.getElementById(`dot-${i}`).classList.add('active');
+
+  // 나머지 비활성화
+  document.querySelectorAll('.hwatu-card:not(.selected)').forEach(c=>{
+    c.classList.add('disabled');
+    const overlay = document.createElement('div');
+    overlay.className = 'disabled-overlay';
+    c.appendChild(overlay);
+  });
+
+  // 결과 바로 표시
+  setTimeout(() => {
+    renderResult(generateFortune(selected));
+    // 공유받은 사람임을 표시
     const toast = document.getElementById('share-toast');
+    toast.textContent = '🎴 친구의 오늘 운세예요!';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }, 600);
+})();
+
+function shareLink() {
+  // 현재 선택된 카드 ID를 URL에 담기
+  const cardIds = selected.map(c=>c.id).join(',');
+  const url = `${window.location.origin}${window.location.pathname}?cards=${cardIds}`;
+  try { history.replaceState(null, '', `?cards=${cardIds}`); } catch(e) {}
+
+  const toast = document.getElementById('share-toast');
+  toast.textContent = '🔗 링크가 복사됐어요!';
+  navigator.clipboard.writeText(url).then(() => {
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 2500);
   }).catch(() => {
-    // 복사 실패시 fallback
     const el = document.createElement('textarea');
     el.value = url;
     document.body.appendChild(el);
     el.select();
     document.execCommand('copy');
     document.body.removeChild(el);
-    const toast = document.getElementById('share-toast');
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 2500);
   });
